@@ -525,10 +525,10 @@ def model_fn_builder(bert_config, num_labels, init_checkpoint, learning_rate,
                 # 首先对结果进行维特比解码
                 # crf 解码
 
-                weight = tf.sequence_mask(FLAGS.max_seq_length)
-                precision = tf_metrics.precision(label_ids, pred_ids, num_labels, [2, 3, 4, 5, 6, 7], weight)
-                recall = tf_metrics.recall(label_ids, pred_ids, num_labels, [2, 3, 4, 5, 6, 7], weight)
-                f = tf_metrics.f1(label_ids, pred_ids, num_labels, [2, 3, 4, 5, 6, 7], weight)
+                #weight = tf.sequence_mask(FLAGS.max_seq_length)
+                precision = tf_metrics.precision(label_ids, pred_ids, num_labels)
+                recall = tf_metrics.recall(label_ids, pred_ids, num_labels)
+                f = tf_metrics.f1(label_ids, pred_ids, num_labels)
 
                 return {
                     "eval_precision": precision,
