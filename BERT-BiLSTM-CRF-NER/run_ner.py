@@ -20,7 +20,7 @@ graph = tf.Graph()
 with graph.as_default():
     sess = tf.Session()
     tf.saved_model.loader.load(sess, [tag_constants.SERVING], FLAGS.export_dir)
-    op_list=graph.get_operations()
+    op_list = graph.get_operations()
     for op in op_list:
         print(op.name)
     #     # print(op.values)
@@ -29,19 +29,21 @@ with graph.as_default():
     tensor_input_mask = graph.get_tensor_by_name('input_mask_1:0')
     tensor_label_ids = graph.get_tensor_by_name('label_ids_1:0')
     tensor_segment_ids = graph.get_tensor_by_name('segment_ids_1:0')
-    tensor_outputs = graph.get_tensor_by_name('crf_loss/Mean:0')
-    print('tensor_outputs:',tensor_outputs)
+    tensor_outputs = graph.get_tensor_by_name('blstm_crf_layer/concat:0')
+    # tensor_logits = graph.get_tensor_by_name('project/Reshape:0')
+    # trans = graph.get_tensor_by_name('crf_loss/transitions:0')
+    print('tensor_outputs:', tensor_outputs)
 
 
 def deep_ner(template):
     examples = []
     guid = '0'
     words = tokenization.convert_to_unicode(template)
-    label_temp = ["O"]*len(words)
+    label_temp = ["O"] * len(words)
     labels = ' '.join([label for label in label_temp if len(label) > 0])
-    text= ' '.join([word for word in words if len(word) > 0])
-    print('text:',text)
-    print('labels:',labels)
+    text = ' '.join([word for word in words if len(word) > 0])
+    print('text:', text)
+    print('labels:', labels)
     examples.append(InputExample(guid=guid, text=text, label=labels))
     predict_examples = examples
     predict_file = os.path.join(FLAGS.output_dir, "predict.tf_record")
@@ -50,7 +52,6 @@ def deep_ner(template):
                                              predict_file, mode="test")
 
     record_iterator = tf.python_io.tf_record_iterator(path=predict_file)
-    result_label = []
     for string_record in record_iterator:
         example = tf.train.Example()
         example.ParseFromString(string_record)
@@ -65,10 +66,16 @@ def deep_ner(template):
             tensor_segment_ids: np.array(segment_ids).reshape(-1, FLAGS.max_seq_length),
         })
         print(result)
-        # for prediction in result:
-        #     print(prediction)
-    return result_label
+        prediction = result[0]
+        result_labels = []
+        for id in prediction:
+            if id != 0:
+                result_labels.append(id2label[id])
+        result_labels.reverse()
+        result_labels.remove("[SEP]")
+        result_labels.remove("[CLS]")
+    return result_labels
 
 
 if __name__ == "__main__":
-    print(deep_ner('香港回归祖国的时间是什么？'))
+    print(deep_ner('中国在亚洲的什么位置？'))
